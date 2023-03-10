@@ -1,4 +1,3 @@
-import math
 import os
 import pickle
 import tempfile
@@ -7,6 +6,7 @@ from lexiscore import CONFIG, logger, timeit
 
 @timeit
 async def load_languages(force_training: bool = False) -> dict:
+    logger.info(f"Loading languages")
     languages = CONFIG.get("general", "languages").split(",")
 
     result = {}
@@ -19,6 +19,7 @@ async def load_languages(force_training: bool = False) -> dict:
 
 @timeit
 def get_probabilties(lang: str, force_training: bool = False) -> dict:
+    logger.info(f"Getting probabilities for {lang}")
     # Try to unpickle trigram probabilities. If that fails, train the splitter
     # and pickle the trigram probabilities.
     pickle_file = os.path.join(tempfile.gettempdir(), f"lexiscore_probs_{lang}.pickle")
@@ -75,7 +76,8 @@ def calculate_trigram_probs(corpus_file, lower=True):
     return trigram_probs
 
 
-def calculate_word_probability(word, trigram_probs, lower=True):
+@timeit
+async def calculate_word_probability(word, trigram_probs, lower=True):
     # Add $$ before and after the word
     word = "$$" + word + "$$"
     if lower:
@@ -97,10 +99,11 @@ def calculate_word_probability(word, trigram_probs, lower=True):
     return word_prob
 
 
-def rank_all_languages(word: str, probs: dict) -> list:
+@timeit
+async def rank_all_languages(word: str, probs: dict) -> list:
     result = []
     for lang in probs:
-        score = calculate_word_probability(word, probs[lang])
+        score = await calculate_word_probability(word, probs[lang])
         result.append((lang, score))
     # Sort the result by score
     result.sort(key=lambda x: x[1], reverse=True)
@@ -112,7 +115,8 @@ def rank_all_languages(word: str, probs: dict) -> list:
 #    print(f"{word}: {lang1_score} vs {lang2_score}")
 
 if __name__ == "__main__":
-    probs = load_languages()
+    print("hallogit")
+    probs = load_languages(force_training=True)
     words = [
         "anders",
         "husar",

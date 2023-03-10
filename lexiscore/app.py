@@ -33,7 +33,7 @@ async def startup_event() -> None:
 async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
     """Check wheter word might be a valid word in the given language."""
 
-    score = calculate_word_probability(word, probabilities[lang])
+    score = await calculate_word_probability(word, probabilities[lang])
     message = {"word": word, "valid": score >= threshold, "score": score}
     return JSONResponse(content=message)
 
@@ -41,6 +41,6 @@ async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONR
 @app.get("/lang/{word}", response_class=JSONResponse)
 async def rank_languages(word: str, threshold: float = 0.0001) -> JSONResponse:
     """Rank the languages, only return languages with score > threshold."""
-    result = rank_all_languages(word, probabilities)
+    result = await rank_all_languages(word, probabilities)
     result = [(lang, score) for lang, score in result if score >= threshold]
     return JSONResponse(content=result)
