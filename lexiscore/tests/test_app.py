@@ -39,3 +39,15 @@ def test_check_invalid_word() -> None:
     assert json["word"] == word
     assert json["valid"] == False
     assert json["score"] < THRESHOLD
+
+
+def test_language_ranking() -> None:
+    """Test the language ranking endpoint."""
+    word = "husene"
+    url = f"{HOST}/lang/{word}"
+    response = requests.get(url)
+    json = response.json()
+    assert isinstance(json, list) == True
+    assert len(json) > 1
+    assert json[0][0] == "da"
+    assert json[0][1] > THRESHOLD

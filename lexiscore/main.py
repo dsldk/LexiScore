@@ -35,6 +35,7 @@ def get_probabilties(lang: str, force_training: bool = False) -> dict:
                 f"Probabilities not found. Training probabilities for {lang} ..."
             )
 
+    logger.info(f'Training probabilities for "{lang}" ...')
     filename = CONFIG.get(lang, "filename")
     filepath = os.path.join(CONFIG.get("general", "data_dir"), filename)
     probs = calculate_trigram_probs(filepath)
@@ -68,11 +69,19 @@ def calculate_trigram_probs(corpus_file, lower=True):
                 else:
                     trigram_counts[trigram] = 1
 
-    # Calculate trigram probabilities
+    # # Calculate trigram probabilities
+    # trigram_probs = {}
+    # for trigram, count in trigram_counts.items():
+    #     trigram_probs[trigram] = count / total_count
+
+    # Set smoothing parameter
+    k = 100  # TODO: Should smoothing parameter depend on corpus size?
+
+    # Calculate trigram probabilities with Laplace smoothing
+    # (jeg ved ikke hvad Laplace er, men det siger chatgpt...)
     trigram_probs = {}
     for trigram, count in trigram_counts.items():
-        trigram_probs[trigram] = count / total_count
-
+        trigram_probs[trigram] = (count + k) / (total_count + k * len(trigram_counts))
     return trigram_probs
 
 
@@ -87,15 +96,17 @@ async def calculate_word_probability(word, trigram_probs, lower=True):
     word_prob = 1.0
     for i in range(len(word) - 2):
         trigram = word[i : i + 3]
+        print(trigram, trigram_probs.get(trigram))
         if trigram in trigram_probs:
             word_prob *= trigram_probs[trigram]
         else:
             # If a trigram is not in the trigram probability dictionary, assume a very low probability
             word_prob *= 1e-20
 
+    print(word_prob)
     # Normalize the probability by word length
     word_prob = word_prob ** (1.0 / max(1, len(word) - 2))
-
+    print(word_prob)
     return word_prob
 
 
@@ -103,16 +114,13 @@ async def calculate_word_probability(word, trigram_probs, lower=True):
 async def rank_all_languages(word: str, probs: dict) -> list:
     result = []
     for lang in probs:
+        print(lang, word)
         score = await calculate_word_probability(word, probs[lang])
         result.append((lang, score))
     # Sort the result by score
     result.sort(key=lambda x: x[1], reverse=True)
     return result
 
-
-#    lang1_score = calculate_word_probability(word, lang1)
-#    lang2_score = calculate_word_probability(word, lang2)
-#    print(f"{word}: {lang1_score} vs {lang2_score}")
 
 if __name__ == "__main__":
     print("hallogit")

@@ -26,13 +26,14 @@ def healthcheck() -> str:
 @app.on_event("startup")
 async def startup_event() -> None:
     global probabilities
-    probabilities = await load_languages()
+    probabilities = await load_languages(force_training=False)
 
 
 @app.get("/check/{word}", response_class=JSONResponse)
 async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
     """Check wheter word might be a valid word in the given language."""
-
+    if lang not in probabilities:
+        return JSONResponse(content={"error": "language not found"}, status_code=404)
     score = await calculate_word_probability(word, probabilities[lang])
     message = {"word": word, "valid": score >= threshold, "score": score}
     return JSONResponse(content=message)
