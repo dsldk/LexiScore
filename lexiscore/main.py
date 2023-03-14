@@ -1,6 +1,7 @@
 import os
 import pickle
 import tempfile
+from collections import defaultdict
 from lexiscore import CONFIG, logger, timeit
 
 
@@ -38,69 +39,72 @@ def get_probabilties(lang: str, force_training: bool = False) -> dict:
     logger.info(f'Training probabilities for "{lang}" ...')
     filename = CONFIG.get(lang, "filename")
     filepath = os.path.join(CONFIG.get("general", "data_dir"), filename)
-    probs = calculate_trigram_probs(filepath)
+    probs = calculate_ngram_probs(filepath)
     with open(pickle_file, "wb") as f:
         pickle.dump(probs, f)
 
     return probs
 
 
-def calculate_trigram_probs(corpus_file, lower=True):
+def calculate_ngram_probs(
+    corpus_file: str, lower: bool = True, ngram_length: int = 4
+) -> dict:
+    """Calculate n-gram probabilities for a corpus."""
     # Create an empty dictionary to store trigram counts
-    trigram_counts = {}
+    ngram_counts = defaultdict(int)
 
     # Initialize the total count to zero
     total_count = 0
 
-    # Add $$ before and after each word in the corpus
     with open(corpus_file, "r") as f:
         for line in f:
             if lower:
                 line = line.lower()
             word = line.strip()
-            word = "$$" + word + "$$"
+            # Add $ before and after each line in the corpus depeing on ngram_length
+            word = "$" * (ngram_length - 1) + word + "$" * (ngram_length - 1)
+            # Update the total count and ngram counts for this word
+            total_count += len(word) - (ngram_length - 1)
+            for i in range(len(word) - (ngram_length - 1)):
+                ngram = word[i : i + ngram_length]
+                ngram_counts[ngram] += 1
 
-            # Update the total count and trigram counts for this word
-            total_count += len(word) - 2
-            for i in range(len(word) - 2):
-                trigram = word[i : i + 3]
-                if trigram in trigram_counts:
-                    trigram_counts[trigram] += 1
-                else:
-                    trigram_counts[trigram] = 1
-
-    # # Calculate trigram probabilities
-    # trigram_probs = {}
-    # for trigram, count in trigram_counts.items():
-    #     trigram_probs[trigram] = count / total_count
+    # # Calculate ngram probabilities
+    # ngram_probs = {}
+    # for ngram, count in ngram_counts.items():
+    #     ngram_probs[ngram] = count / total_count
 
     # Set smoothing parameter
-    k = 100  # TODO: Should smoothing parameter depend on corpus size?
+    k = 100
 
-    # Calculate trigram probabilities with Laplace smoothing
+    logger.info(f"Smoothing parameter (Laplace): {k} (total_count: {total_count})")
+
+    # Calculate ngram probabilities with Laplace smoothing
     # (jeg ved ikke hvad Laplace er, men det siger chatgpt...)
-    trigram_probs = {}
-    for trigram, count in trigram_counts.items():
-        trigram_probs[trigram] = (count + k) / (total_count + k * len(trigram_counts))
-    return trigram_probs
+    ngram_probs = {}
+    for ngram, count in ngram_counts.items():
+        ngram_probs[ngram] = (count + k) / (total_count + k * len(ngram_counts))
+    return ngram_probs
 
 
 @timeit
-async def calculate_word_probability(word, trigram_probs, lower=True):
-    # Add $$ before and after the word
-    word = "$$" + word + "$$"
+async def calculate_word_probability(
+    word, ngram_probs, lower=True, ngram_length: int = 4
+):
+    # Add $ before and after the word depending on ngram_length
+    word = "$" * (ngram_length - 1) + word + "$" * (ngram_length - 1)
     if lower:
         word = word.lower()
 
     # Calculate the probability of each trigram and multiply them together
     word_prob = 1.0
-    for i in range(len(word) - 2):
-        trigram = word[i : i + 3]
-        print(trigram, trigram_probs.get(trigram))
-        if trigram in trigram_probs:
-            word_prob *= trigram_probs[trigram]
+    for i in range(len(word) - (ngram_length - 1)):
+        ngram = word[i : i + ngram_length]
+        print(ngram, ngram_probs.get(ngram))
+        if ngram in ngram_probs:
+            word_prob *= ngram_probs[ngram]
         else:
-            # If a trigram is not in the trigram probability dictionary, assume a very low probability
+            # If a ngram is not in the ngram probability dictionary, assume a very low probability
             word_prob *= 1e-20
 
     print(word_prob)

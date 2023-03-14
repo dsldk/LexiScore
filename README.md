@@ -5,7 +5,7 @@ Return a score for the likelyhood of a word belonging to a certain language base
 ## Run in Docker
 
 ```bash
-docker compose up
+docker compose up --build
 ```
 
 The webservice will now be accessible on localhost:9002
