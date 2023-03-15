@@ -100,12 +100,13 @@ async def calculate_word_probability(
     word_prob = 1.0
     for i in range(len(word) - (ngram_length - 1)):
         ngram = word[i : i + ngram_length]
-        print(ngram, ngram_probs.get(ngram))
         if ngram in ngram_probs:
-            word_prob *= ngram_probs[ngram]
+            ngram_prob = ngram_probs[ngram]
         else:
             # If a ngram is not in the ngram probability dictionary, assume a very low probability
-            word_prob *= 1e-20
+            ngram_prob = 1e-20
+        print(ngram, ngram_prob)
+        word_prob *= ngram_prob
 
     print(word_prob)
     # Normalize the probability by word length
@@ -120,6 +121,11 @@ async def rank_all_languages(word: str, probs: dict) -> list:
     for lang in probs:
         print(lang, word)
         score = await calculate_word_probability(word, probs[lang])
+        if "-" in word:
+            score_mod = await calculate_word_probability(
+                word.replace("-", ""), probs[lang]
+            )
+            score = score if score > score_mod else score_mod
         result.append((lang, score))
     # Sort the result by score
     result.sort(key=lambda x: x[1], reverse=True)

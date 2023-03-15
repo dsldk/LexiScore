@@ -40,7 +40,7 @@ async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONR
 
 
 @app.get("/lang/{word}", response_class=JSONResponse)
-async def rank_languages(word: str, threshold: float = 0.0001) -> JSONResponse:
+async def rank_languages(word: str, threshold: float = 0.000001) -> JSONResponse:
     """Rank the languages, only return languages with score > threshold."""
     result = await rank_all_languages(word, probabilities)
     result = [(lang, score) for lang, score in result if score >= threshold]
