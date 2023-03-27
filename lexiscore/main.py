@@ -2,10 +2,10 @@ import os
 import pickle
 import tempfile
 from collections import defaultdict
-from lexiscore import CONFIG, logger, timeit
+from lexiscore import CONFIG, logger, async_timeit
 
 
-@timeit
+@async_timeit
 async def load_languages(force_training: bool = False) -> dict:
     logger.info(f"Loading languages")
     languages = CONFIG.get("general", "languages").split(",")
@@ -18,8 +18,8 @@ async def load_languages(force_training: bool = False) -> dict:
     return result
 
 
-@timeit
-def get_probabilties(lang: str, force_training: bool = False) -> dict:
+@async_timeit
+async def get_probabilties(lang: str, force_training: bool = False) -> dict:
     logger.info(f"Getting probabilities for {lang}")
     # Try to unpickle trigram probabilities. If that fails, train the splitter
     # and pickle the trigram probabilities.
@@ -46,7 +46,8 @@ def get_probabilties(lang: str, force_training: bool = False) -> dict:
     return probs
 
 
-def calculate_ngram_probs(
+@async_timeit
+async def calculate_ngram_probs(
     corpus_file: str, lower: bool = True, ngram_length: int = 4
 ) -> dict:
     """Calculate n-gram probabilities for a corpus."""
@@ -87,7 +88,7 @@ def calculate_ngram_probs(
     return ngram_probs
 
 
-@timeit
+@async_timeit
 async def calculate_word_probability(
     word, ngram_probs, lower=True, ngram_length: int = 4
 ):
@@ -115,7 +116,7 @@ async def calculate_word_probability(
     return word_prob
 
 
-@timeit
+@async_timeit
 async def rank_all_languages(word: str, probs: dict) -> list:
     result = []
     for lang in probs:
