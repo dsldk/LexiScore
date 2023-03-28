@@ -5,7 +5,7 @@ import logging
 from collections import OrderedDict
 from configparser import RawConfigParser
 from functools import wraps
-from os import sep
+from os import sep, environ
 from os.path import dirname
 from typing import Any, Callable
 
@@ -36,9 +36,8 @@ if LOCALPATH:
 CONFIG = RawConfigParser(dict_type=MultiOrderedDict, strict=False)
 CONFIG.read(("%sdefault.ini" % (LOCALPATH,), "%sconfig.ini" % (LOCALPATH,)))
 
-logging.basicConfig(
-    format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
-)
+log_level = environ.get("LOG_LEVEL", "INFO")
+logging.basicConfig(format="%(asctime)s : %(levelname)s : %(message)s", level=log_level)
 logger = logging.getLogger(__name__)
 
 
