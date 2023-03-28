@@ -123,9 +123,13 @@ async def calculate_word_probability(
 
 
 @async_timeit
-async def rank_all_languages(word: str, probs: dict) -> List[Tuple[str, float]]:
+async def rank_all_languages(
+    word: str, probs: dict, langs: List[str] | None = None
+) -> List[Tuple[str, float]]:
     result = []
     for lang in probs:
+        if langs and lang not in langs:
+            continue
         print(lang, word)
         score = await calculate_word_probability(word, probs[lang])
         if "-" in word:

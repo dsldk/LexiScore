@@ -56,8 +56,19 @@ async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONR
     response_class=JSONResponse,
     dependencies=[Depends(api_key_security)],
 )
-async def rank_languages(word: str, threshold: float = 0.000001) -> JSONResponse:
-    """Rank the languages, only return languages with score > threshold."""
-    result = await rank_all_languages(word, probabilities)
+async def rank_languages(
+    word: str, threshold: float = 0.000001, languages: str | None = None
+) -> JSONResponse:
+    """Rank the languages, only return languages with score > threshold.
+
+    - word: str. Word to check.
+    - threshold: float. Minimum score to return a language.
+    - languages: str. Comma-separated list of languages to rank. If None, all languages are ranked.
+    """
+    if languages is not None:
+        langs = languages.split(",")
+    else:
+        langs = None
+    result = await rank_all_languages(word, probabilities, langs=langs)
     result = [(lang, score) for lang, score in result if score >= threshold]
     return JSONResponse(content=result)
