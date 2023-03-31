@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.gitsecret/keys/random_seed
+!*.secret
+secrets.env
+apikeys_test.txt
+apikeys.dev.txt
+apikeys.prod.txt
+sqlite.db
