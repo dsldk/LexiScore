@@ -52,6 +52,33 @@ docker compose --env-file=prod.env up --build
 
 The webservice will now be accessible on localhost:9002 or localhost:8002. Ports can be changed in the prod.env and dev.env files. Add "-d" for detached mode.
 
+## Run from terminal (without Docker)
+
+Setup virual environment:
+
+```bash
+ACTIVATE ENVIRONMENT
+pip install -r requirements.txt
+pip install .
+```
+
+Setup environment variables:
+
+```bash
+export FASTAPI_SIMPLE_SECURITY_SECRET=some_secret_password
+export FASTAPI_SIMPLE_SECURITY_API_KEY_FILE=/path/to/apikeys.txt
+export LOG_LEVEL=INFO
+```
+
+Run:
+
+```bash
+cd lexiscore
+uvicorn app:app --PORT 8000
+```
+
+The webservice should now be accessible on port 8000 with some_secret_password as the master password that can be used to create api-keys to access the actual endpoints from localhost:8000/docs.
+
 ## Endpoints
 
 See:
