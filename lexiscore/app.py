@@ -101,14 +101,13 @@ async def bulk_rank_languages(
     - languages: str. Comma-separated list of languages to rank. If None, all languages are ranked.
     """
     word_list = words.split(",")
-    word_list = [word.strip() for word in words]
     if languages is not None:
         langs = languages.split(",")
     else:
         langs = None
     result = []
     for word in word_list:
-        word_result = await rank_all_languages(word, probabilities, langs=langs)
+        word_result = await rank_all_languages(word.strip(), probabilities, langs=langs)
         word_result = [
             (lang, score) for lang, score in word_result if score >= threshold
         ]
