@@ -33,4 +33,11 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest
+        cd dslsplit
+        pytest tests/
+    - name: Check for failures
+      run: |
+        if [ $? -ne 0 ]; then
+          echo "Pytest failed. Please fix the errors and try again."
+          exit 1
+        fi
