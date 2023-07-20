@@ -10,4 +10,5 @@ setup(
     description="A FastAPI webservices for a probability of a word belonging to a certain language",
     packages=find_packages(),  # __init__.py folders search
     install_requires=requirements,
+    include_package_data=True,
 )
