@@ -2,9 +2,12 @@ import os
 import pickle
 import tempfile
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 from lexiscore import CONFIG, logger, async_timeit
+
+current_dir = Path(__file__).parent.resolve()
 
 
 @async_timeit
@@ -84,8 +87,8 @@ async def calculate_ngram_probs(
 
     # Initialize the total count to zero
     total_count = 0
-
-    with open(corpus_file, "r") as f:
+    filepath = current_dir / corpus_file
+    with open(filepath, "r") as f:
         for line in f:
             if lower:
                 line = line.lower()
