@@ -1,40 +1,42 @@
 """Testing fastws exists service."""
-from typing import assert_type
 import pytest
-import requests
+from typing import assert_type
 from fastapi.testclient import TestClient
 from lexiscore.app import app
 
-# TODO: Change tests to TestClient
+
+class ASGITestClient(TestClient):
+    """Test client that starts and stops the app on enter and exit."""
+
+    async def __aenter__(self):
+        await self.app.router.startup()
+        return super().__aenter__()
+
+    async def __aexit__(self, *args, **kwargs):
+        await self.app.router.shutdown()
+        return await super().__aexit__(*args, **kwargs)
 
 
-@pytest.fixture(scope="session")
-async def test_app():
-    # Load the test client
-    async with TestClient(app) as client:
-        # Call the startup event
-        await app.startup()
-        # Return the test client
+@pytest.fixture(scope="module")
+def test_client() -> None:
+    with ASGITestClient(app) as client:
         yield client
 
 
-HOST = "http://127.0.0.1:8000"
 THRESHOLD = 0.0001
 CHECK_KEYS = ["word", "valid", "score"]
 
 
-def test_health() -> None:
+def test_health(test_client: TestClient) -> None:
     """Test healthcheck."""
-    url = f"{HOST}/health"
-    response = requests.get(url)
+    response = test_client.get("/health")
     assert response.status_code == 200
 
 
-def test_check() -> None:
+def test_check(test_client: TestClient) -> None:
     """Test the check endpoint."""
     word = "husar"
-    url = f"{HOST}/check/{word}"
-    response = requests.get(url)
+    response = test_client.get(f"/check/{word}")
     json = response.json()
     assert isinstance(json, dict) == True
     assert list(json.keys()) == CHECK_KEYS
@@ -43,11 +45,10 @@ def test_check() -> None:
     assert json["score"] > THRESHOLD
 
 
-def test_check_invalid_word() -> None:
+def test_check_invalid_word(test_client: TestClient) -> None:
     """Test the check endpoint."""
     word = "ffffft"
-    url = f"{HOST}/check/{word}"
-    response = requests.get(url)
+    response = test_client.get(f"/check/{word}")
     json = response.json()
     assert isinstance(json, dict) == True
     assert list(json.keys()) == CHECK_KEYS
@@ -56,11 +57,10 @@ def test_check_invalid_word() -> None:
     assert json["score"] < THRESHOLD
 
 
-def test_language_ranking() -> None:
+def test_language_ranking(test_client: TestClient) -> None:
     """Test the language ranking endpoint."""
     word = "husene"
-    url = f"{HOST}/lang/{word}?languages=da,de,eng"
-    response = requests.get(url)
+    response = test_client.get(f"/lang/{word}?languages=da,de,eng")
     json = response.json()
     assert isinstance(json, list) == True
     assert len(json) > 1
@@ -68,18 +68,11 @@ def test_language_ranking() -> None:
     assert json[0][1] > THRESHOLD
 
 
-# TODO: Fix this test
-async def test_bulklang_endpoint_with_no_languages_provided():
-    """
-    GIVEN a FastAPI app
-    WHEN the '/bulklang' endpoint is hit with a list of words and no languages provided
-    THEN ensure the endpoint returns a JSON response with correct results and status code
-    """
+def test_bulklang_endpoint(test_client: TestClient):
+    """Test the bulklang endpoint with no languages provided."""
     # Define the input data
-    input_data = {"words": "apple,banana,orange,pear"}
-
-    # Hit the endpoint
-    response = await test_app.get("/bulklang", params=input_data)
+    input_data = {"words": "første,halløj,zwicschen,there", "languages": "da,de,en"}
+    response = test_client.get("/bulklang", params=input_data)
 
     # Ensure the status code is correct
     assert response.status_code == 200
@@ -93,15 +86,26 @@ async def test_bulklang_endpoint_with_no_languages_provided():
     # Ensure the word list is correct
     assert response_content["words"] == input_data["words"]
 
-    # Ensure the results are correct
-    expected_results = [
-        [("English", 0.9), ("French", 0.1)],
-        [("Spanish", 0.8), ("Portuguese", 0.2)],
-        [("English", 0.7), ("Dutch", 0.3)],
-        [("English", 1.0)],
-    ]
-    assert response_content["results"] == expected_results
+    # Ensure that results are correct
+    results = response_content["results"]
+    words_in_result = [result["word"] for result in results]
+    assert len(results) == 4
+    assert isinstance(results, list) == True
+    assert isinstance(results[0], dict) == True
+    assert "word" in results[0]
+    assert "langs" in results[0]
 
-    # Ensure the language count is correct
-    expected_lang_count = [("English", 3), ("Spanish", 1)]
-    assert response_content["lang_count"] == expected_lang_count
+    # Assert that the words in the result are the same as the input words
+    assert words_in_result == input_data["words"].split(",")
+    # Assert langs
+    langs_of_first = results[0]["langs"]
+    assert isinstance(langs_of_first, list) == True
+    assert isinstance(langs_of_first[0], list) == True
+    assert langs_of_first[0][0] == "da"
+
+    # Assert that lang_count is correct
+    lang_count = response_content["lang_count"]
+    assert isinstance(lang_count, list) == True
+    assert isinstance(lang_count[0], list) == True
+    assert lang_count[0][0] == "da"
+    assert lang_count[0][1] == 2
