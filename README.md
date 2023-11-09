@@ -118,7 +118,7 @@ The configuration also needs to be updated.This can be done by adding a config.i
 touch lexiscore/config.ini
 ```
 
-The config shouyld includ basic information about the language
+The config should include basic information about the language
 
 ```txt
 [general]
