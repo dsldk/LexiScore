@@ -135,23 +135,3 @@ See:
 * localhost:9002/docs (development)
 * localhost:8002/docs (production)
 
-## Accessing the webservice
-
-```python
-import requests
-from json import loads
-
-URL = "http://localhost:9002"
-word = "husar"
-api_key = "2d3922ea-c5cc-4d08-8be5-4c71c23c29f1"
-params = {"lang": "da", "api-key": api_key}
-
-response = requests.get(f"{URL}/check/{word}", params=params)
-result = loads(response.text)
-# {"word":"husar","valid":true,"score":0.00024243456583721002}
-
-params = {"api-key": api_key}
-response = requests.get(f"{URL}/lang/{word}", params=params)
-result = loads(response.text)
-# [["da",0.00024243456583721002],["de",0.00021127065052605355],["da_lemma",0.0001922643763442915],["en",4.605676657984788e-06]]
-```

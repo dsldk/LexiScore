@@ -1,21 +1,22 @@
 """FastAPI service for wordres."""
-from collections import defaultdict
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi_simple_security import api_key_router, api_key_security
 from os import environ
-from typing import List
+
 from lexiscore import CONFIG, logger
-from lexiscore.main import (
+from lexiscore.model import (
     load_languages,
     calculate_word_probability,
     rank_all_languages,
 )
 
-enable_security = environ.get("ENABLE_SECURITY", "").strip()
+enable_security = environ.get("ENABLE_SECURITY", "False").strip()
+
 if enable_security is None:
     raise ValueError("ENABLE_SECURITY not set")
+
 enable_security = enable_security.lower() in ("true", "1") and True or False
 security_str = (
     "\033[1;32mENABLED\033[0m" if enable_security else "\033[1;31mDISABLED\033[0m"
@@ -56,12 +57,13 @@ async def startup_event() -> None:
     dependencies=[Depends(api_key_security)],
 )
 async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
-    """Check whether or not word might be a valid word in the given language, based on character pentagrams.
+    """Check whether word might be a valid word in the given language, based on character pentagrams.
 
     Args:
         word: the word to check.
         lang: the language to check the word against. Defaults to "da".
-        threshold: a threshold value - if the probability of the word is equal to or above, the word is deemed a valid word in that language. Defaults to 0.0001.
+        threshold: a threshold value - if the probability of the word is equal to or above, the word is deemed a valid
+        word in that language. Defaults to 0.0001.
 
     Returns:
         {"word": str, "valid": bool, "score": float}
@@ -85,7 +87,8 @@ async def rank_languages(
 
     Args:
         word: word to check.
-        threshold: minimum score to return a language. Defaults to 0.000001. Note that this is a lower threshold than the check endpoint, and will return more languages.
+        threshold: minimum score to return a language. Defaults to 0.000001. Note that this is a lower threshold
+        than the check endpoint, and will return more languages.
         languages: comma-separated list of languages to rank. If not set, all languages are ranked.
 
     Returns:
@@ -108,7 +111,8 @@ async def rank_languages(
 async def bulk_rank_languages(
     words: str, threshold: float = 0.000001, languages: str | None = None
 ) -> JSONResponse:
-    """Rank the languages for each word in words, only return languages with score > threshold, and count the number of times each language is the first result.
+    """Rank the languages for each word in words, only return languages with score > threshold, and count the number
+    of times each language is the first result.
 
     Args:
         words: comma-separated list of words to check.

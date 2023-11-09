@@ -35,9 +35,9 @@ async def load_languages(force_training: bool = False) -> Dict[str, Dict[str, fl
 async def get_probabilties(lang: str, force_training: bool = False) -> Dict[str, float]:
     """Return probabilities for a given language.
 
-    Args:
-        lang: the language to get probabilities for. The language must be present in the config file with a filename supplied.
-        force_training: force training, otherwise pickled versions are used if they are present. Defaults to False.
+    Args: lang: the language to get probabilities for. The language must be present in the config file with a
+    filename supplied. force_training: force training, otherwise pickled versions are used if they are present.
+    Defaults to False.
 
     Returns:
         a dictionary with the character ngrams as keys and the probabilities as values.
@@ -70,7 +70,7 @@ async def get_probabilties(lang: str, force_training: bool = False) -> Dict[str,
 
 @async_timeit
 async def calculate_ngram_probs(
-    corpus_file: str, lower: bool = True, ngram_length: int = 4
+        corpus_file: str, lower: bool = True, ngram_length: int = 4
 ) -> Dict[str, float]:
     """Calculate n-gram probabilities for a corpus.
 
@@ -98,7 +98,7 @@ async def calculate_ngram_probs(
             # Update the total count and ngram counts for this word
             total_count += len(word) - (ngram_length - 1)
             for i in range(len(word) - (ngram_length - 1)):
-                ngram = word[i : i + ngram_length]
+                ngram = word[i: i + ngram_length]
                 ngram_counts[ngram] += 1
 
     # # Calculate ngram probabilities
@@ -116,7 +116,7 @@ async def calculate_ngram_probs(
 
 @async_timeit
 async def calculate_word_probability(
-    word: str, ngram_probs: dict, lower: bool = True, ngram_length: int = 4
+        word: str, ngram_probs: dict, lower: bool = True, ngram_length: int = 4
 ) -> float:
     """Generate the probability of a word using ngram probabilities.
 
@@ -138,7 +138,7 @@ async def calculate_word_probability(
     log_output = []
     word_prob = 1.0
     for i in range(len(word) - (ngram_length - 1)):
-        ngram = word[i : i + ngram_length]
+        ngram = word[i: i + ngram_length]
         if ngram in ngram_probs:
             ngram_prob = ngram_probs[ngram]
         else:
@@ -158,7 +158,7 @@ async def calculate_word_probability(
 
 @async_timeit
 async def rank_all_languages(
-    word: str, probs: dict, langs: List[str] | None = None
+        word: str, probs: dict, langs: List[str] | None = None
 ) -> List[Tuple[str, float]]:
     """Use probabilities to rank languages for a word.
 

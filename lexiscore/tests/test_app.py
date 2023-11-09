@@ -1,6 +1,5 @@
 """Testing fastws exists service."""
 import pytest
-from typing import assert_type
 from fastapi.testclient import TestClient
 from lexiscore.app import app
 
@@ -38,10 +37,10 @@ def test_check(test_client: TestClient) -> None:
     word = "husar"
     response = test_client.get(f"/check/{word}")
     json = response.json()
-    assert isinstance(json, dict) == True
+    assert isinstance(json, dict) is True
     assert list(json.keys()) == CHECK_KEYS
     assert json["word"] == word
-    assert json["valid"] == True
+    assert json["valid"] is True
     assert json["score"] > THRESHOLD
 
 
@@ -50,10 +49,10 @@ def test_check_invalid_word(test_client: TestClient) -> None:
     word = "ffffft"
     response = test_client.get(f"/check/{word}")
     json = response.json()
-    assert isinstance(json, dict) == True
+    assert isinstance(json, dict) is True
     assert list(json.keys()) == CHECK_KEYS
     assert json["word"] == word
-    assert json["valid"] == False
+    assert json["valid"] is False
     assert json["score"] < THRESHOLD
 
 
@@ -62,7 +61,7 @@ def test_language_ranking(test_client: TestClient) -> None:
     word = "husene"
     response = test_client.get(f"/lang/{word}?languages=da,de,eng")
     json = response.json()
-    assert isinstance(json, list) == True
+    assert isinstance(json, list) is True
     assert len(json) > 1
     assert json[0][0] == "da"
     assert json[0][1] > THRESHOLD
@@ -90,8 +89,8 @@ def test_bulklang_endpoint(test_client: TestClient):
     results = response_content["results"]
     words_in_result = [result["word"] for result in results]
     assert len(results) == 4
-    assert isinstance(results, list) == True
-    assert isinstance(results[0], dict) == True
+    assert isinstance(results, list) is True
+    assert isinstance(results[0], dict) is True
     assert "word" in results[0]
     assert "langs" in results[0]
 
@@ -99,13 +98,13 @@ def test_bulklang_endpoint(test_client: TestClient):
     assert words_in_result == input_data["words"].split(",")
     # Assert langs
     langs_of_first = results[0]["langs"]
-    assert isinstance(langs_of_first, list) == True
-    assert isinstance(langs_of_first[0], list) == True
+    assert isinstance(langs_of_first, list) is True
+    assert isinstance(langs_of_first[0], list) is True
     assert langs_of_first[0][0] == "da"
 
     # Assert that lang_count is correct
     lang_count = response_content["lang_count"]
-    assert isinstance(lang_count, list) == True
-    assert isinstance(lang_count[0], list) == True
+    assert isinstance(lang_count, list) is True
+    assert isinstance(lang_count[0], list) is True
     assert lang_count[0][0] == "da"
     assert lang_count[0][1] == 2

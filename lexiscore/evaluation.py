@@ -1,4 +1,4 @@
-"""Evaluation of the DSLSplit webservice."""
+"""Evaluation of the Lexiscore algorithm"""
 import csv
 import os
 import requests
@@ -14,8 +14,10 @@ tp = 0  # True positives
 fp = 0  # False positives
 fn = 0  # False negatives
 tn = 0  # True negatives
+
 false_positives = []
 false_negatives = []
+
 for query, expected_output in data:
     params = {}
     response = requests.get(f"http://localhost:8000/lang/{query}", params=params)
