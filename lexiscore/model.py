@@ -141,7 +141,3 @@ async def rank_all_languages(
     # Sort the result by score
     result.sort(key=lambda x: x[1], reverse=True)
     return result
-
-
-if __name__ == "__main__":
-    pass

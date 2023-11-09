@@ -1,21 +1,21 @@
 """FastAPI service for wordres."""
-from collections import defaultdict
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi_simple_security import api_key_router, api_key_security
 from os import environ
-from typing import List
 from lexiscore import CONFIG, logger
-from lexiscore.main import (
+from lexiscore.model import (
     load_languages,
     calculate_word_probability,
     rank_all_languages,
 )
 
-enable_security = environ.get("ENABLE_SECURITY", "").strip()
+enable_security = environ.get("ENABLE_SECURITY", "False").strip()
+
 if enable_security is None:
     raise ValueError("ENABLE_SECURITY not set")
+
 enable_security = enable_security.lower() in ("true", "1") and True or False
 security_str = (
     "\033[1;32mENABLED\033[0m" if enable_security else "\033[1;31mDISABLED\033[0m"
@@ -55,7 +55,15 @@ async def startup_event() -> None:
     dependencies=[Depends(api_key_security)],
 )
 async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
-    """Check wheter word might be a valid word in the given language."""
+    """Check wheter word might be a valid word in the given language.
+
+    Args:
+        word: Word to check.
+        lang: The language to check
+        threshold: Minimum score to return a language.
+
+    Returns: {"word": "word", "valid": true, "score": 0.00019231}
+"""
     if lang not in probabilities:
         return JSONResponse(content={"error": "language not found"}, status_code=404)
     score = await calculate_word_probability(word, probabilities[lang])
@@ -73,9 +81,13 @@ async def rank_languages(
 ) -> JSONResponse:
     """Rank the languages, only return languages with score > threshold.
 
-    - word: str. Word to check.
-    - threshold: float. Minimum score to return a language.
-    - languages: str. Comma-separated list of languages to rank. If None, all languages are ranked.
+    Args:
+        word: Word to check.
+        threshold: Minimum score to return a language.
+        languages: Comma-separated list of languages to rank. If None, all languages are ranked.
+
+    Returns: [["lang_1", 0.00024], ["lang_2", 0.00018]]
+
     """
     if languages is not None:
         langs = languages.split(",")
@@ -94,11 +106,21 @@ async def rank_languages(
 async def bulk_rank_languages(
     words: str, threshold: float = 0.000001, languages: str | None = None
 ) -> JSONResponse:
-    """Rank the languages for each word in words, only return languages with score > threshold.
+    """ Rank the languages for each word in words, only return languages with score > threshold.
 
-    - words: str. Comma-separated list of words to check.
-    - threshold: float. Minimum score to return a language.
-    - languages: str. Comma-separated list of languages to rank. If None, all languages are ranked.
+    Args:
+        words: Comma-separated list of words to check.
+        threshold: Minimum score to return a language.
+        languages: Comma-separated list of languages to rank. If None, all languages are ranked.
+
+    Returns: {"words": "word1,word2",
+              "results": [
+                          [["lang_1": 0.0032], ["lang_2": 0.0021]],
+                          [["lang_1": 0.0023], ["lang_2": 0.0016]]
+                         ],
+              "lang_count": [["lang_1": 2], ["lang2": 0]]
+              }
+
     """
     word_list = words.split(",")
     if languages is not None:

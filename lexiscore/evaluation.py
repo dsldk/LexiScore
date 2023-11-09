@@ -1,4 +1,4 @@
-"""Evaluation of the DSLSplit webservice."""
+"""Evaluation of the lexiscore webservice."""
 import csv
 import os
 import requests
@@ -9,13 +9,16 @@ with open(os.path.join(CONFIG.get("general", "data_dir"), "evaluation_data.csv")
     reader = csv.reader(f, delimiter=";")
     data = list(reader)[0:]  # No header row
 print(data)
+
 # Send requests to FastAPI webservice and compare with expected output
 tp = 0  # True positives
 fp = 0  # False positives
 fn = 0  # False negatives
 tn = 0  # True negatives
+
 false_positives = []
 false_negatives = []
+
 for query, expected_output in data:
     params = {}
     response = requests.get(f"http://localhost:8000/lang/{query}", params=params)
@@ -52,6 +55,7 @@ for query, expected_output, actual_output in false_positives:
         f"Query: {query}, Expected output: {expected_output}, Actual output: {actual_output}"
     )
 print("False negatives:")
+
 for query, expected_output, actual_output in false_negatives:
     print(
         f"Query: {query}, Expected output: {expected_output}, Actual output: {actual_output}"

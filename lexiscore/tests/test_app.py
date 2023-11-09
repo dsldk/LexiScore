@@ -1,9 +1,9 @@
 """Testing fastws exists service."""
-from typing import assert_type
 import pytest
 import requests
 from fastapi.testclient import TestClient
 from lexiscore.app import app
+
 
 # TODO: Change tests to TestClient
 
@@ -36,10 +36,10 @@ def test_check() -> None:
     url = f"{HOST}/check/{word}"
     response = requests.get(url)
     json = response.json()
-    assert isinstance(json, dict) == True
+    assert isinstance(json, dict) is True
     assert list(json.keys()) == CHECK_KEYS
     assert json["word"] == word
-    assert json["valid"] == True
+    assert json["valid"] is True
     assert json["score"] > THRESHOLD
 
 
@@ -49,10 +49,10 @@ def test_check_invalid_word() -> None:
     url = f"{HOST}/check/{word}"
     response = requests.get(url)
     json = response.json()
-    assert isinstance(json, dict) == True
+    assert isinstance(json, dict) is True
     assert list(json.keys()) == CHECK_KEYS
     assert json["word"] == word
-    assert json["valid"] == False
+    assert json["valid"] is False
     assert json["score"] < THRESHOLD
 
 
@@ -62,7 +62,7 @@ def test_language_ranking() -> None:
     url = f"{HOST}/lang/{word}?languages=da,de,eng"
     response = requests.get(url)
     json = response.json()
-    assert isinstance(json, list) == True
+    assert isinstance(json, list) is True
     assert len(json) > 1
     assert json[0][0] == "da"
     assert json[0][1] > THRESHOLD
