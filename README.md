@@ -10,11 +10,11 @@ git clone https://github.com/dsldk/lexiscore.git
 
 ## Security with API keys
 
-Security with API keys can be enabled by setting the environment variable `ENABLE_SECURITY=true`. 
+Security with API keys can be enabled by setting the environment variable `ENABLE_SECURITY=true`.
 
 Security uses a DSL fork of fastapi_simple_security: [https://github.com/dsldk/fastapi_simple_security]
 
-Security is not activated by default. The following steps is only relevant if security is enabled.
+Security is not activated by default.The following steps is only relevant if security is enabled.
 
 ### Master password
 
@@ -40,7 +40,7 @@ The csv file should be set with the environmental variable `FASTAPI_SIMPLE_SECUR
 
 ## Run with Docker
 
-To run the webservice with Docker, a Docker client needs to be installed. See [Docker documentation](https://www.docker.com) for details.
+To run the webservice with Docker, a Docker client needs to be installed.See [Docker documentation](https://www.docker.com) for details.
 
 ### In development mode
 
@@ -71,7 +71,8 @@ LOG_LEVEL=WARNING
 PORT=8001
 ENABLE_SECURITY=true
 ```
-To create custom development or production modes, simply either change the respective environment files or create a new custom file. 
+
+To create custom development or production modes, simply either change the respective environment files or create a new custom file.
 
 To run Docker with the custom setup, remember to change the parameter `--env-file``
 
@@ -105,13 +106,13 @@ LOG_LEVEL=INFO
 
 The webservice should now be accessible on port 8000 with some_secret_password as the master password that can be used to create api-keys to access the actual endpoints from localhost:8000/docs.
 
-
 ## Setup
 
 ### Adding language in local workspace
-To add a new language to the local wordspace, you need to a file with a list of words from the language. This could either be a lemma list or a full form list. The list should be added to the lexiscore/data directory.
 
-The configuration also needs to be updated. This can be done by adding a config.ini to extend the default.ini:
+To add a new language to the local workspace, you need to a file with a list of words from the language.This could either be a lemma list or a full form list.The list should be added to the lexiscore/data directory.
+
+The configuration also needs to be updated.This can be done by adding a config.ini to extend the default.ini:
 
 ```bash
 touch lexiscore/config.ini
