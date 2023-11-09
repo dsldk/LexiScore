@@ -1,21 +1,21 @@
 """FastAPI service for wordres."""
+from collections import defaultdict
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi_simple_security import api_key_router, api_key_security
 from os import environ
+from typing import List
 from lexiscore import CONFIG, logger
-from lexiscore.model import (
+from lexiscore.main import (
     load_languages,
     calculate_word_probability,
     rank_all_languages,
 )
 
-enable_security = environ.get("ENABLE_SECURITY", "False").strip()
-
+enable_security = environ.get("ENABLE_SECURITY", "").strip()
 if enable_security is None:
     raise ValueError("ENABLE_SECURITY not set")
-
 enable_security = enable_security.lower() in ("true", "1") and True or False
 security_str = (
     "\033[1;32mENABLED\033[0m" if enable_security else "\033[1;31mDISABLED\033[0m"
@@ -39,12 +39,13 @@ app.include_router(api_key_router, prefix="/auth", tags=["_auth"])
 
 @app.get("/health", response_class=PlainTextResponse)
 def healthcheck() -> str:
-    """Healthcheck, for use in automatic ."""
+    """Healthcheck, for use in automatic verification."""
     return "200"
 
 
 @app.on_event("startup")
 async def startup_event() -> None:
+    """Load probabilities on startup."""
     global probabilities
     probabilities = await load_languages(force_training=False)
 
@@ -55,15 +56,16 @@ async def startup_event() -> None:
     dependencies=[Depends(api_key_security)],
 )
 async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
-    """Check wheter word might be a valid word in the given language.
+    """Check whether or not word might be a valid word in the given language, based on character pentagrams.
 
     Args:
-        word: Word to check.
-        lang: The language to check
-        threshold: Minimum score to return a language.
+        word: the word to check.
+        lang: the language to check the word against. Defaults to "da".
+        threshold: a threshold value - if the probability of the word is equal to or above, the word is deemed a valid word in that language. Defaults to 0.0001.
 
-    Returns: {"word": "word", "valid": true, "score": 0.00019231}
-"""
+    Returns:
+        {"word": str, "valid": bool, "score": float}
+    """
     if lang not in probabilities:
         return JSONResponse(content={"error": "language not found"}, status_code=404)
     score = await calculate_word_probability(word, probabilities[lang])
@@ -79,15 +81,15 @@ async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONR
 async def rank_languages(
     word: str, threshold: float = 0.000001, languages: str | None = None
 ) -> JSONResponse:
-    """Rank the languages, only return languages with score > threshold.
+    """Rank the languages, only return languages with score >= threshold.
 
     Args:
-        word: Word to check.
-        threshold: Minimum score to return a language.
-        languages: Comma-separated list of languages to rank. If None, all languages are ranked.
+        word: word to check.
+        threshold: minimum score to return a language. Defaults to 0.000001. Note that this is a lower threshold than the check endpoint, and will return more languages.
+        languages: comma-separated list of languages to rank. If not set, all languages are ranked.
 
-    Returns: [["lang_1", 0.00024], ["lang_2", 0.00018]]
-
+    Returns:
+        List of (language, score) tuples.
     """
     if languages is not None:
         langs = languages.split(",")
@@ -106,21 +108,18 @@ async def rank_languages(
 async def bulk_rank_languages(
     words: str, threshold: float = 0.000001, languages: str | None = None
 ) -> JSONResponse:
-    """ Rank the languages for each word in words, only return languages with score > threshold.
+    """Rank the languages for each word in words, only return languages with score > threshold, and count the number of times each language is the first result.
 
     Args:
-        words: Comma-separated list of words to check.
-        threshold: Minimum score to return a language.
-        languages: Comma-separated list of languages to rank. If None, all languages are ranked.
-
-    Returns: {"words": "word1,word2",
-              "results": [
-                          [["lang_1": 0.0032], ["lang_2": 0.0021]],
-                          [["lang_1": 0.0023], ["lang_2": 0.0016]]
-                         ],
-              "lang_count": [["lang_1": 2], ["lang2": 0]]
-              }
-
+        words: comma-separated list of words to check.
+        threshold: minimum score to return a language.
+        languages: comma-separated list of languages to rank. If not supplied, all languages are ranked.
+    Returns:
+        {
+            "words": str,
+            "results": a list of lists of (language, score) tuples
+            "lang_count": List[(language, count)]"
+        }
     """
     word_list = words.split(",")
     if languages is not None:
@@ -129,14 +128,16 @@ async def bulk_rank_languages(
         langs = None
     result = []
     for word in word_list:
-        word_result = await rank_all_languages(word.strip(), probabilities, langs=langs)
+        word = word.strip()
+        word_result = await rank_all_languages(word, probabilities, langs=langs)
         word_result = [
             (lang, score) for lang, score in word_result if score >= threshold
         ]
-        result.append(word_result)
+        result.append({"word": word, "langs": word_result})
     # Counts the number of times each langauge is the first result
     lang_count = {}
-    for word_result in result:
+    for word_info in result:
+        word_result = word_info["langs"]
         if len(word_result) > 0:
             lang = word_result[0][0]
             lang_count[lang] = lang_count.get(lang, 0) + 1
@@ -151,5 +152,6 @@ async def bulk_rank_languages(
     return JSONResponse(content=output)
 
 
+# Disable API-KEY security if ENABLE_SECURITY is not set or is false
 if not enable_security:
     app.dependency_overrides[api_key_security] = lambda: None
