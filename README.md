@@ -14,7 +14,7 @@ Security with API keys can be enabled by setting the environment variable `ENABL
 
 Security uses a DSL fork of fastapi_simple_security: [https://github.com/dsldk/fastapi_simple_security]
 
-Security is not activated by default.The following steps is only relevant if security is enabled.
+Security is not activated by default. The following steps is only relevant if security is enabled.
 
 ### Master password
 
