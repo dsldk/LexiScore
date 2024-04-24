@@ -5,6 +5,11 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi_simple_security import api_key_router, api_key_security
 from os import environ
 
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from starlette.requests import Request
+
 from lexiscore import CONFIG, logger
 from lexiscore.model import (
     load_languages,
@@ -23,6 +28,7 @@ security_str = (
 )
 logger.info(f"Security: {security_str}")
 
+limiter = Limiter(key_func=get_remote_address)
 
 title = CONFIG.get("general", "title")
 
@@ -37,9 +43,12 @@ app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True
 logger.info(f"Adding API key security")
 app.include_router(api_key_router, prefix="/auth", tags=["_auth"])
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/health", response_class=PlainTextResponse)
-def healthcheck() -> str:
+@limiter.limit("10/second")
+def healthcheck(request: Request) -> str:
     """Healthcheck, for use in automatic verification."""
     return "200"
 
@@ -56,7 +65,8 @@ async def startup_event() -> None:
     response_class=JSONResponse,
     dependencies=[Depends(api_key_security)],
 )
-async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
+@limiter.limit("10/second")
+async def check(request: Request, word: str, lang: str = "da", threshold: float = 0.0001) -> JSONResponse:
     """Check whether word might be a valid word in the given language, based on character pentagrams.
 
     Args:
@@ -80,7 +90,8 @@ async def check(word: str, lang: str = "da", threshold: float = 0.0001) -> JSONR
     response_class=JSONResponse,
     dependencies=[Depends(api_key_security)],
 )
-async def rank_languages(
+@limiter.limit("10/second")
+async def rank_languages(request: Request,
     word: str, threshold: float = 0.000001, languages: str | None = None
 ) -> JSONResponse:
     """Rank the languages, only return languages with score >= threshold.
@@ -108,7 +119,8 @@ async def rank_languages(
     response_class=JSONResponse,
     dependencies=[Depends(api_key_security)],
 )
-async def bulk_rank_languages(
+@limiter.limit("10/second")
+async def bulk_rank_languages(request: Request,
     words: str, threshold: float = 0.000001, languages: str | None = None
 ) -> JSONResponse:
     """Rank the languages for each word in words, only return languages with score > threshold, and count the number
